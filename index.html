@@ -1,0 +1,1036 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>A-tåget – Planera & Skriv</title>
+  <style>
+    :root{
+      /* Light theme */
+      --bg: #f6f8fc;
+      --card: #ffffff;
+      --card2:#f2f5ff;
+      --text:#101827;
+      --muted:#56627a;
+
+      --line:#cfd7ea;
+      --rail:#b8c3dd;
+
+      --plan:#2b6ef3;   /* blue */
+      --write:#16a34a;  /* green */
+      --accent:#7c3aed; /* purple */
+
+      --chip:#eef2ff;
+      --chipHover:#e0e7ff;
+
+      --shadow: 0 10px 30px rgba(16,24,39,.08);
+      --radius:16px;
+
+      --node: 34px;
+      --railH: 110px;
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color:var(--text);
+      background: radial-gradient(1100px 650px at 20% 0%, #e9f1ff 0%, var(--bg) 60%);
+      line-height:1.35;
+    }
+
+    .container{
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    header{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+      margin-bottom: 12px;
+    }
+    h1{
+      margin:0;
+      font-size: 20px;
+      letter-spacing:.2px;
+    }
+    .sub{
+      margin:6px 0 0;
+      color:var(--muted);
+      font-size: 13px;
+    }
+
+    .modeSwitch{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: var(--card);
+      border: 1px solid rgba(16,24,39,.08);
+      box-shadow: var(--shadow);
+    }
+    .modeTitle{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      min-width: 240px;
+    }
+    .modeTitle .kicker{
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+      letter-spacing:.2px;
+    }
+    .modeTitle .big{
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing:.2px;
+    }
+
+    .toggle{
+      display:flex;
+      border: 1px solid rgba(16,24,39,.12);
+      border-radius: 14px;
+      overflow:hidden;
+      background: #fff;
+    }
+    .toggle button{
+      appearance:none;
+      border:0;
+      padding: 10px 12px;
+      cursor:pointer;
+      font-weight: 900;
+      letter-spacing:.2px;
+      background: transparent;
+      color: var(--muted);
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .toggle button.active{
+      color:#fff;
+    }
+    .toggle button#btnPlan.active{ background: var(--plan); }
+    .toggle button#btnWrite.active{ background: var(--write); }
+
+    .pill{
+      margin-left: 10px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(43,110,243,.08);
+      border: 1px solid rgba(43,110,243,.18);
+      color: #1e3a8a;
+      font-size: 12px;
+      font-weight: 800;
+      white-space:nowrap;
+    }
+    .pill.write{
+      background: rgba(22,163,74,.10);
+      border-color: rgba(22,163,74,.22);
+      color: #065f46;
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 14px;
+    }
+    @media (max-width: 980px){
+      .layout{ grid-template-columns: 1fr; }
+    }
+
+    .card{
+      background: var(--card);
+      border: 1px solid rgba(16,24,39,.08);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    /* ===== Rail area (always visible) ===== */
+    .railWrap{
+      padding: 14px 14px 10px;
+      background: linear-gradient(180deg, rgba(43,110,243,.07), transparent 60%);
+    }
+
+    .railTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom: 10px;
+    }
+
+    .railTop .left{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .hintTag{
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--muted);
+      background: rgba(16,24,39,.03);
+      border: 1px solid rgba(16,24,39,.08);
+      font-weight: 800;
+    }
+    .hintTag b{ color: var(--text); }
+
+    .btnRow{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+
+    button.ui{
+      appearance:none;
+      border: 1px solid rgba(16,24,39,.12);
+      background: #fff;
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor:pointer;
+      font-weight: 900;
+      letter-spacing:.2px;
+      transition: transform .08s ease, background .15s ease, border .15s ease;
+    }
+    button.ui:hover{
+      background: #fbfcff;
+      border-color: rgba(43,110,243,.30);
+    }
+    button.ui:active{ transform: translateY(1px); }
+    button.ui.secondary{
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .trackArea{
+      position:relative;
+      height: var(--railH);
+      border-radius: 18px;
+      background: linear-gradient(180deg, #fff, var(--card2));
+      border: 1px solid rgba(16,24,39,.08);
+      overflow:hidden;
+    }
+
+    .trackLine{
+      position:absolute;
+      left: 22px;
+      right: 22px;
+      top: 56%;
+      height: 8px;
+      transform: translateY(-50%);
+      background: linear-gradient(90deg, rgba(43,110,243,.35), rgba(124,58,237,.25), rgba(22,163,74,.30));
+      border-radius: 999px;
+      box-shadow: 0 0 0 6px rgba(16,24,39,.02);
+    }
+
+    .nodes{
+      position:absolute;
+      left: 22px;
+      right: 22px;
+      top: 56%;
+      transform: translateY(-50%);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      pointer-events:auto;
+    }
+
+    .nodeBtn{
+      width: var(--node);
+      height: var(--node);
+      border-radius: 999px;
+      border: 2px solid rgba(16,24,39,.20);
+      background: #fff;
+      box-shadow: 0 0 0 6px rgba(16,24,39,.05);
+      display:grid;
+      place-items:center;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 1000;
+      cursor:pointer;
+      transition: transform .08s ease, border .15s ease, box-shadow .15s ease;
+    }
+    .nodeBtn:hover{ transform: translateY(-1px); border-color: rgba(43,110,243,.45); }
+    .nodeBtn.active{
+      border-color: rgba(43,110,243,.80);
+      color: rgba(43,110,243,1);
+      box-shadow: 0 0 0 8px rgba(43,110,243,.12);
+    }
+    .nodeBtn.done{
+      border-color: rgba(22,163,74,.55);
+      color: rgba(22,163,74,1);
+    }
+
+    .labels{
+      display:flex;
+      justify-content:space-between;
+      gap: 10px;
+      padding: 6px 8px 0;
+      color: var(--muted);
+      font-size: 11px;
+      user-select:none;
+    }
+    .labels span{
+      width: calc((100% - 6px)/7);
+      text-align:center;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .labels span strong{ color: var(--text); font-weight: 1000; }
+
+    /* ===== Train (more train-like) ===== */
+    .train{
+      position:absolute;
+      top: 56%;
+      transform: translateY(-50%);
+      width: 86px;
+      height: 44px;
+      cursor:pointer;
+      user-select:none;
+      transition: left .55s cubic-bezier(.2,.85,.2,1);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      pointer-events:none; /* we click stations, not train, per your spec */
+    }
+
+    .trainBody{
+      position:relative;
+      width: 86px;
+      height: 44px;
+    }
+    /* Locomotive front */
+    .loco{
+      position:absolute;
+      left:0;
+      top:6px;
+      width: 44px;
+      height: 26px;
+      border-radius: 10px 12px 12px 10px;
+      background: linear-gradient(90deg, rgba(43,110,243,.95), rgba(124,58,237,.85));
+      border: 1px solid rgba(16,24,39,.18);
+      box-shadow: 0 10px 20px rgba(16,24,39,.12);
+    }
+    .window{
+      position:absolute;
+      left:10px;
+      top:10px;
+      width: 14px;
+      height: 10px;
+      border-radius: 3px;
+      background: rgba(255,255,255,.9);
+      border: 1px solid rgba(16,24,39,.12);
+    }
+    .chimney{
+      position:absolute;
+      left: 30px;
+      top: 2px;
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      background: rgba(16,24,39,.75);
+    }
+    /* Wagon */
+    .wagon{
+      position:absolute;
+      left: 46px;
+      top: 10px;
+      width: 36px;
+      height: 22px;
+      border-radius: 8px;
+      background: linear-gradient(90deg, rgba(22,163,74,.88), rgba(43,110,243,.50));
+      border: 1px solid rgba(16,24,39,.16);
+      box-shadow: 0 10px 20px rgba(16,24,39,.10);
+    }
+    .coupler{
+      position:absolute;
+      left: 40px;
+      top: 20px;
+      width: 8px;
+      height: 2px;
+      background: rgba(16,24,39,.55);
+      border-radius: 2px;
+    }
+    /* Wheels */
+    .wheel{
+      position:absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(16,24,39,.85);
+      top: 30px;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,.35);
+    }
+    .w1{ left: 8px; }
+    .w2{ left: 26px; }
+    .w3{ left: 56px; }
+    .w4{ left: 72px; }
+
+    /* ===== Panels below rail ===== */
+    .panel{
+      padding: 14px 14px 16px;
+      border-top: 1px solid rgba(16,24,39,.06);
+    }
+    .panelHead{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom: 10px;
+    }
+    .panelHead h2{
+      margin:0;
+      font-size: 16px;
+      letter-spacing:.2px;
+    }
+    .panelHead .task{
+      margin:6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      max-width: 720px;
+    }
+    .badge{
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid rgba(16,24,39,.10);
+      background: rgba(16,24,39,.03);
+      color: var(--muted);
+      font-weight: 900;
+      white-space:nowrap;
+    }
+    .badge.plan{ border-color: rgba(43,110,243,.20); color: #1e3a8a; background: rgba(43,110,243,.08); }
+    .badge.write{ border-color: rgba(22,163,74,.22); color: #065f46; background: rgba(22,163,74,.10); }
+
+    .sectionTitle{
+      margin: 10px 0 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing:.2px;
+    }
+
+    .chips{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin: 0 0 10px;
+    }
+    .chip{
+      background: var(--chip);
+      border: 1px solid rgba(16,24,39,.10);
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 999px;
+      cursor:pointer;
+      font-size: 13px;
+      transition: background .15s ease, border .15s ease, transform .08s ease;
+      user-select:none;
+      font-weight: 800;
+    }
+    .chip:hover{ background: var(--chipHover); border-color: rgba(43,110,243,.25); }
+    .chip:active{ transform: translateY(1px); }
+
+    textarea{
+      width:100%;
+      border-radius: 14px;
+      border: 1px solid rgba(16,24,39,.12);
+      background: #fff;
+      color: var(--text);
+      padding: 12px;
+      outline:none;
+      font-size: 14px;
+      line-height:1.45;
+      resize: vertical;
+    }
+    textarea:focus{
+      border-color: rgba(43,110,243,.45);
+      box-shadow: 0 0 0 6px rgba(43,110,243,.10);
+    }
+    .smallTA{ min-height: 88px; }
+    .bigTA{ min-height: 260px; }
+
+    .planBox{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:10px;
+    }
+
+    .readOnlyBox{
+      border: 1px dashed rgba(16,24,39,.18);
+      background: rgba(16,24,39,.02);
+      border-radius: 14px;
+      padding: 10px 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .readOnlyBox b{ color: var(--text); }
+
+    /* Right column output */
+    .out{
+      padding: 16px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .out h3{
+      margin:0;
+      font-size: 16px;
+    }
+    .out .mini{
+      margin-top:-6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .outBox{
+      white-space: pre-wrap;
+      border-radius: 14px;
+      border: 1px solid rgba(16,24,39,.12);
+      background: #fff;
+      padding: 12px;
+      min-height: 220px;
+      font-size: 14px;
+      line-height:1.5;
+    }
+
+    .toast{
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(16,24,39,.92);
+      border: 1px solid rgba(255,255,255,.18);
+      color: #fff;
+      box-shadow: 0 10px 25px rgba(0,0,0,.25);
+      opacity: 0;
+      pointer-events:none;
+      transition: opacity .25s ease, transform .25s ease;
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .toast.show{
+      opacity: 1;
+      transform: translateX(-50%) translateY(-4px);
+    }
+
+    .kHint{
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>A-tåget – planera och skriv ett NP-svar</h1>
+        <p class="sub">Klicka på stationerna för att flytta tåget. I <b>Planera</b> fyller du stödord. I <b>Skriv</b> skriver du svaret station för station.</p>
+      </div>
+
+      <div class="modeSwitch" aria-label="Växla läge">
+        <div class="modeTitle">
+          <div class="kicker">Läge</div>
+          <div class="big" id="modeBig">🧠 PLANERA</div>
+        </div>
+
+        <div class="toggle" role="tablist" aria-label="Planera eller skriv">
+          <button id="btnPlan" class="active" role="tab" aria-selected="true">🧠 Planera</button>
+          <button id="btnWrite" role="tab" aria-selected="false">✍️ Skriv</button>
+        </div>
+
+        <div class="pill" id="modePill">Stödord & idéer</div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <!-- LEFT: rail + station panel -->
+      <section class="card">
+        <div class="railWrap">
+          <div class="railTop">
+            <div class="left">
+              <span class="hintTag" id="stationPill"><b>Station 1</b> av 7</span>
+              <span class="hintTag kHint" id="stationShort">Start</span>
+            </div>
+            <div class="btnRow">
+              <button class="ui secondary" id="prevBtn">← Föregående</button>
+              <button class="ui" id="nextBtn">Nästa →</button>
+            </div>
+          </div>
+
+          <div class="trackArea" id="trackArea">
+            <div class="trackLine"></div>
+
+            <!-- nodes as buttons -->
+            <div class="nodes" id="nodes"></div>
+
+            <!-- train -->
+            <div class="train" id="train" aria-hidden="true">
+              <div class="trainBody">
+                <div class="loco"></div>
+                <div class="window"></div>
+                <div class="chimney"></div>
+                <div class="coupler"></div>
+                <div class="wagon"></div>
+                <div class="wheel w1"></div>
+                <div class="wheel w2"></div>
+                <div class="wheel w3"></div>
+                <div class="wheel w4"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="labels" id="labels"></div>
+        </div>
+
+        <div class="panel" id="panel"></div>
+      </section>
+
+      <!-- RIGHT: built answer -->
+      <aside class="card out">
+        <div>
+          <h3>Mitt färdiga svar</h3>
+          <div class="mini">Bygg ihop stationerna när du vill.</div>
+        </div>
+
+        <div class="btnRow">
+          <button class="ui" id="buildBtn">Bygg svar</button>
+          <button class="ui secondary" id="copyBtn">Kopiera</button>
+          <button class="ui secondary" id="clearBtn">Rensa allt</button>
+        </div>
+
+        <div class="outBox" id="outBox"></div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ===== Station content =====
+    const STATIONS = [
+      {
+        key: "start",
+        short: "Start",
+        name: "Startstationen – Påståendet",
+        task: "Svara rakt på frågan: vad är din huvudpoäng?",
+        starters: [
+          "Det handlar om att…",
+          "En viktig sak är att…",
+          "Huvudpoängen är att…",
+          "Det påverkar eftersom…",
+          "En central orsak är att…"
+        ],
+        planPlaceholder: "Stödord/idéer (t.ex. 3–8 ord)…",
+      },
+      {
+        key: "e1",
+        short: "E1",
+        name: "Exempel 1 – Första beviset",
+        task: "Ge ett konkret exempel som stödjer din huvudpoäng.",
+        starters: [
+          "Ett exempel på detta är…",
+          "Det märks till exempel när…",
+          "En situation där detta syns är…",
+          "Det kan man se genom att…"
+        ],
+        planPlaceholder: "Stödord till exempel 1…",
+      },
+      {
+        key: "f1",
+        short: "F1",
+        name: "Fördjupning 1 – Förklara exemplet",
+        task: "Förklara varför exempel 1 visar något viktigt (orsak, konsekvens, samband).",
+        starters: [
+          "Det beror på att…",
+          "Eftersom…",
+          "Det leder till att…",
+          "Det visar att…",
+          "Det gör att…"
+        ],
+        planPlaceholder: "Stödord till fördjupning 1…",
+      },
+      {
+        key: "e2",
+        short: "E2",
+        name: "Exempel 2 – Andra beviset",
+        task: "Ge ett annat exempel som breddar svaret (annan aspekt/grupp/sammanhang).",
+        starters: [
+          "Ett annat exempel är…",
+          "På ett annat sätt märks det när…",
+          "Man kan också se detta genom att…",
+          "En annan situation är…"
+        ],
+        planPlaceholder: "Stödord till exempel 2…",
+      },
+      {
+        key: "f2",
+        short: "F2",
+        name: "Fördjupning 2 – Förklara exemplet",
+        task: "Förklara även exempel 2: varför är detta ett bevis?",
+        starters: [
+          "Det beror också på att…",
+          "Det hänger ihop med att…",
+          "Det gör att…",
+          "Det kan leda till att…",
+          "Det visar ännu tydligare att…"
+        ],
+        planPlaceholder: "Stödord till fördjupning 2…",
+      },
+      {
+        key: "men",
+        short: "MEN",
+        name: "MEN-stationen – Nyansera & Problematisera",
+        task: "Visa att det inte är svartvitt: undantag, perspektiv, dilemma eller konflikt.",
+        starters: [
+          "Samtidigt kan det se annorlunda ut för…",
+          "Det gäller inte alltid eftersom…",
+          "Även om det ofta är så, kan det ibland…",
+          "Ett problem som kan uppstå är att…",
+          "Det kan bli en konflikt mellan… och…"
+        ],
+        planPlaceholder: "Stödord till nyans/problemat…",
+      },
+      {
+        key: "slut",
+        short: "Slut",
+        name: "Slutstationen – Slutsats",
+        task: "Knyt ihop allt: vad visar ditt resonemang sammantaget?",
+        starters: [
+          "Sammanfattningsvis visar detta att…",
+          "Därför kan man säga att…",
+          "Trots att… så…",
+          "Även om… så…"
+        ],
+        planPlaceholder: "Stödord till slutsats…",
+      }
+    ];
+
+    // ===== Storage =====
+    const STORAGE_KEY = "a_taget_v3_store";
+    const store = loadStore();
+
+    // Store shape:
+    // {
+    //   plan: { stationKey: "..." },  // support words / ideas
+    //   finalText: "..."              // big answer textarea
+    // }
+    function defaultStore(){
+      return {
+        plan: Object.fromEntries(STATIONS.map(s => [s.key, ""])),
+        finalText: ""
+      };
+    }
+    function loadStore(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(!raw) return defaultStore();
+        const parsed = JSON.parse(raw);
+        const base = defaultStore();
+        if (parsed && typeof parsed === "object"){
+          if (parsed.plan && typeof parsed.plan === "object"){
+            for (const s of STATIONS){
+              if (typeof parsed.plan[s.key] === "string") base.plan[s.key] = parsed.plan[s.key];
+            }
+          }
+          if (typeof parsed.finalText === "string") base.finalText = parsed.finalText;
+        }
+        return base;
+      }catch{
+        return defaultStore();
+      }
+    }
+    function saveStore(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+    }
+
+    // ===== UI refs =====
+    const UI = {
+      btnPlan: document.getElementById("btnPlan"),
+      btnWrite: document.getElementById("btnWrite"),
+      modeBig: document.getElementById("modeBig"),
+      modePill: document.getElementById("modePill"),
+
+      prevBtn: document.getElementById("prevBtn"),
+      nextBtn: document.getElementById("nextBtn"),
+
+      stationPill: document.getElementById("stationPill"),
+      stationShort: document.getElementById("stationShort"),
+
+      nodes: document.getElementById("nodes"),
+      labels: document.getElementById("labels"),
+      trackArea: document.getElementById("trackArea"),
+      train: document.getElementById("train"),
+
+      panel: document.getElementById("panel"),
+
+      buildBtn: document.getElementById("buildBtn"),
+      copyBtn: document.getElementById("copyBtn"),
+      clearBtn: document.getElementById("clearBtn"),
+      outBox: document.getElementById("outBox"),
+
+      toast: document.getElementById("toast"),
+    };
+
+    let mode = "plan"; // "plan" | "write"
+    let currentIndex = 0;
+
+    // ===== Helpers =====
+    function toast(msg){
+      UI.toast.textContent = msg;
+      UI.toast.classList.add("show");
+      setTimeout(()=>UI.toast.classList.remove("show"), 1200);
+    }
+    function escapeHtml(str){
+      return String(str)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function setMode(nextMode){
+      mode = nextMode;
+
+      UI.btnPlan.classList.toggle("active", mode === "plan");
+      UI.btnWrite.classList.toggle("active", mode === "write");
+      UI.btnPlan.setAttribute("aria-selected", mode === "plan" ? "true" : "false");
+      UI.btnWrite.setAttribute("aria-selected", mode === "write" ? "true" : "false");
+
+      if (mode === "plan"){
+        UI.modeBig.textContent = "🧠 PLANERA";
+        UI.modePill.textContent = "Stödord & idéer";
+        UI.modePill.classList.remove("write");
+      } else {
+        UI.modeBig.textContent = "✍️ SKRIV";
+        UI.modePill.textContent = "Skriv i ordning";
+        UI.modePill.classList.add("write");
+        // Per your spec: when entering write-mode, jump to station 1
+        currentIndex = 0;
+      }
+
+      renderAll();
+    }
+
+    function goTo(idx){
+      currentIndex = Math.max(0, Math.min(STATIONS.length - 1, idx));
+      renderAll();
+    }
+    function next(){
+      if (currentIndex < STATIONS.length - 1) goTo(currentIndex + 1);
+      else toast("Du är vid slutstationen.");
+    }
+    function prev(){
+      if (currentIndex > 0) goTo(currentIndex - 1);
+      else toast("Du är vid startstationen.");
+    }
+
+    function renderNodes(){
+      UI.nodes.innerHTML = "";
+      STATIONS.forEach((s, i) => {
+        const b = document.createElement("button");
+        b.className = "nodeBtn";
+        b.type = "button";
+        b.textContent = (i+1);
+        if (i === currentIndex) b.classList.add("active");
+        if (store.plan[s.key].trim().length > 0) b.classList.add("done"); // simple "filled" indicator
+        b.title = "Gå till " + s.name;
+        b.addEventListener("click", () => goTo(i));
+        UI.nodes.appendChild(b);
+      });
+
+      UI.labels.innerHTML = "";
+      STATIONS.forEach((s, i) => {
+        const sp = document.createElement("span");
+        sp.innerHTML = (i === currentIndex) ? `<strong>${escapeHtml(s.short)}</strong>` : escapeHtml(s.short);
+        UI.labels.appendChild(sp);
+      });
+
+      UI.stationPill.innerHTML = `<b>Station ${currentIndex+1}</b> av 7`;
+      UI.stationShort.textContent = STATIONS[currentIndex].name;
+    }
+
+    function moveTrain(){
+      const area = UI.trackArea.getBoundingClientRect();
+      const leftPad = 22;
+      const rightPad = 22;
+      const usable = area.width - leftPad - rightPad;
+      const step = usable / (STATIONS.length - 1);
+
+      const trainW = 86;
+      const x = leftPad + (step * currentIndex) - (trainW/2);
+      UI.train.style.left = `${x}px`;
+    }
+
+    function renderPanel(){
+      const s = STATIONS[currentIndex];
+
+      const planText = store.plan[s.key] || "";
+
+      if (mode === "plan"){
+        UI.panel.innerHTML = `
+          <div class="panelHead">
+            <div>
+              <h2>${escapeHtml(s.name)}</h2>
+              <div class="task">${escapeHtml(s.task)}</div>
+            </div>
+            <div class="badge plan">PLANERA</div>
+          </div>
+
+          <div class="sectionTitle">Exempel på startmeningar (klicka för att lägga till i dina stödord)</div>
+          <div class="chips" id="chips"></div>
+
+          <div class="sectionTitle">Dina stödord / idéer</div>
+          <div class="planBox">
+            <textarea class="smallTA" id="planTA" placeholder="${escapeHtml(s.planPlaceholder)}">${escapeHtml(planText)}</textarea>
+          </div>
+
+          <div class="readOnlyBox" style="margin-top:10px;">
+            <b>Tips:</b> Planera fritt. Du kan hoppa mellan stationer. När du byter till <b>Skriv</b> börjar du från station 1 och skriver i ordning.
+          </div>
+        `;
+
+        // chips
+        const chipWrap = document.getElementById("chips");
+        s.starters.forEach(st => {
+          const chip = document.createElement("div");
+          chip.className = "chip";
+          chip.textContent = st;
+          chip.addEventListener("click", () => {
+            const ta = document.getElementById("planTA");
+            const before = ta.value;
+            const insert = (before.trim().length === 0) ? st : ("\n" + st);
+            ta.value = before + insert;
+            ta.focus();
+            store.plan[s.key] = ta.value;
+            saveStore();
+            renderNodes(); // update "done" ring
+            toast("Tillagd i stödord");
+          });
+          chipWrap.appendChild(chip);
+        });
+
+        // save on input
+        const planTA = document.getElementById("planTA");
+        planTA.addEventListener("input", () => {
+          store.plan[s.key] = planTA.value;
+          saveStore();
+          renderNodes();
+        });
+
+      } else {
+        // WRITE MODE
+        UI.panel.innerHTML = `
+          <div class="panelHead">
+            <div>
+              <h2>${escapeHtml(s.name)}</h2>
+              <div class="task">Utgå från dina stödord och skriv din del av svaret. När du är klar: klicka nästa station.</div>
+            </div>
+            <div class="badge write">SKRIV</div>
+          </div>
+
+          <div class="readOnlyBox">
+            <b>Stödord från planeringen (den här stationen):</b><br>
+            ${planText.trim().length ? escapeHtml(planText).replaceAll("\n","<br>") : "<i>Inga stödord än. Byt till Planera och fyll i.</i>"}
+          </div>
+
+          <div class="sectionTitle" style="margin-top:10px;">Skriv ditt svar (stor ruta)</div>
+          <textarea class="bigTA" id="finalTA" placeholder="Skriv hela ditt svar här. Skriv station för station: börja med Start, klicka sen nästa station och fortsätt…">${escapeHtml(store.finalText || "")}</textarea>
+
+          <div class="readOnlyBox" style="margin-top:10px;">
+            <b>Så gör du:</b> Skriv meningen/delen för <b>den här stationen</b>, sen klickar du på nästa station. Du ser alltid dina stödord här ovanför.
+          </div>
+        `;
+
+        const finalTA = document.getElementById("finalTA");
+        finalTA.addEventListener("input", () => {
+          store.finalText = finalTA.value;
+          saveStore();
+        });
+      }
+    }
+
+    function buildAnswer(){
+      // Build from station plan text + final text:
+      // Your design now focuses on finalText as primary output.
+      // But "Bygg svar" can also build a suggested outline from plan fields.
+      const parts = STATIONS.map(s => {
+        const t = (store.plan[s.key] || "").trim();
+        if (!t) return `【${s.short}】(tomt)`;
+        return `【${s.short}】\n${t}`;
+      });
+
+      const out = parts.join("\n\n") + "\n\n" +
+        "———\nFÄRDIG TEXT (det du skriver i skrivläget)\n———\n" +
+        (store.finalText || "");
+
+      UI.outBox.textContent = out.trim() || "Inget att bygga ännu.";
+      toast("Svar byggt");
+    }
+
+    async function copyToClipboard(text){
+      try{
+        await navigator.clipboard.writeText(text);
+        toast("Kopierat!");
+      }catch{
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        toast("Kopierat!");
+      }
+    }
+
+    function clearAll(){
+      const fresh = defaultStore();
+      store.plan = fresh.plan;
+      store.finalText = fresh.finalText;
+      saveStore();
+      UI.outBox.textContent = "";
+      currentIndex = 0;
+      renderAll();
+      toast("Rensat");
+    }
+
+    function renderAll(){
+      renderNodes();
+      renderPanel();
+      // train position after layout
+      requestAnimationFrame(() => moveTrain());
+    }
+
+    // ===== Wire buttons =====
+    UI.btnPlan.addEventListener("click", () => setMode("plan"));
+    UI.btnWrite.addEventListener("click", () => setMode("write"));
+
+    UI.prevBtn.addEventListener("click", prev);
+    UI.nextBtn.addEventListener("click", next);
+
+    UI.buildBtn.addEventListener("click", buildAnswer);
+    UI.copyBtn.addEventListener("click", async () => {
+      const t = UI.outBox.textContent || "";
+      if (!t.trim()) return toast("Inget att kopiera än");
+      await copyToClipboard(t);
+    });
+    UI.clearBtn.addEventListener("click", clearAll);
+
+    window.addEventListener("resize", () => moveTrain());
+
+    // ===== Init =====
+    setMode("plan"); // renders
+  </script>
+</body>
+</html>
